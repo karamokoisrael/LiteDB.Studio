@@ -1,20 +1,27 @@
-﻿using System;
+﻿using LiteDB;
+using LiteDB.Engine;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Net;
+using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace LiteDB.Studio
 {
     public class HtmlPageDump
     {
         private const int BLOCK_WIDTH = 30;
-        private const int BLOCKS_PER_LINE = 32;
-        private const int PAGE_HEADER_SIZE = 32;
-        private enum PageType { Empty = 0, Header = 1, Collection = 2, Index = 3, Data = 4 }
 
         private readonly BsonDocument _page;
         private readonly uint _pageID;
-        private readonly PageType _pageType;
+        private readonly byte _pageType;
         private readonly byte[] _buffer;
         private readonly StringBuilder _writer = new StringBuilder();
         private readonly List<PageItem> _items = new List<PageItem>();
@@ -25,7 +32,7 @@ namespace LiteDB.Studio
             _page = page;
             _buffer = page["buffer"].AsBinary;
             _pageID = BitConverter.ToUInt32(_buffer, 0);
-            _pageType = (PageType)_buffer[4];
+            _pageType = (byte)_buffer[4];
             page.Remove("buffer");
 
             this.LoadItems();
@@ -50,11 +57,11 @@ namespace LiteDB.Studio
             this.SpanPageHeader();
             this.SpanSegments();
 
-            if (_pageType == PageType.Header)
+            if (_pageType == 1)
             {
                 this.SpanHeaderPage();
             }
-            else if (_pageType == PageType.Collection)
+            else if (_pageType == 2)
             {
                 this.SpanCollectionPage();
             }
@@ -115,7 +122,7 @@ namespace LiteDB.Studio
 
                         _items[position].Id = i.ToString();
 
-                        if (_pageType == PageType.Data)
+                        if (_pageType == 4)
                         {
                             this.SpanItem<byte>(position, 0, null, "Extend", null);
                             this.SpanPageID(position + 1, "NextBlockID", true, false);
@@ -174,7 +181,7 @@ namespace LiteDB.Studio
 
         private void SpanHeaderPage()
         {
-            var h = PAGE_HEADER_SIZE;
+            var h = 32;
             var color = 0;
 
             h += this.SpanItem(h, 26, null, "HeaderInfo", (byte[] b, int i) => Encoding.UTF8.GetString(b, i, 27));
@@ -200,7 +207,7 @@ namespace LiteDB.Studio
                 p += this.SpanCString(p, "Name");
                 p += this.SpanPageID(p, "PageID", false, false);
 
-                for (var k = initial; k < p; k++)
+                for (var k = initial; k <= p; k++)
                 {
                     _items[k].Color = (color % _colors.Length);
                 }
@@ -215,7 +222,7 @@ namespace LiteDB.Studio
 
             for (var i = 0; i < 5; i++)
             {
-                this.SpanPageID(PAGE_HEADER_SIZE + (i * 4), "DataPageList #" + i, false, true);
+                this.SpanPageID(32 + (i * 4), "DataPageList #" + i, false, true);
             }
 
             var h = 96;
@@ -237,7 +244,7 @@ namespace LiteDB.Studio
                 h += this.SpanItem<byte>(h, 0, null, "MaxLevel", null);
                 h += this.SpanPageID(h, "IndexPageList", false, true);
 
-                for (var k = initial; k < h; k++)
+                for (var k = initial; k <= h; k++)
                 {
                     _items[k].Color = (color % _colors.Length);
                 }
@@ -246,7 +253,7 @@ namespace LiteDB.Studio
             }
         }
 
-        #region SpanItems Helper Methods
+        #region SpanItems Method Helpers
 
         private int SpanItem<T>(int index, int span, string href, string caption, Func<byte[], int, T> convert)
         {
@@ -383,9 +390,14 @@ namespace LiteDB.Studio
         {
             _writer.AppendLine("<div class='rules'>");
 
-            for (var i = 0; i < _items.Count; i += BLOCKS_PER_LINE)
+            for (var i = 0; i < _items.Count; i++)
             {
-                _writer.AppendLine($"<div>{i}</div>");
+                var item = _items[i];
+
+                if (i % 32 == 0)
+                {
+                    _writer.AppendLine($"<div>{i}</div>");
+                }
             }
 
             _writer.AppendLine("</div>");
@@ -393,7 +405,7 @@ namespace LiteDB.Studio
 
         private void RenderBlocks()
         {
-            var blocksLeft = BLOCKS_PER_LINE;
+            var span = 32;
 
             _writer.AppendLine("<div class='blocks'>");
             _writer.AppendLine("<div class='line'>");
@@ -401,7 +413,26 @@ namespace LiteDB.Studio
             for (var i = 0; i < _items.Count; i++)
             {
                 var item = _items[i];
-                blocksLeft = this.RenderItem(item, blocksLeft);
+
+                span -= (item.Span + 1);
+
+                var renderText = this.RenderItem(item, span);
+
+                if (span <= 0)
+                {
+                    _writer.AppendLine("</div><div class='line'>");
+
+                    if (span < 0)
+                    {
+                        var overflow = new PageItem { Color = item.Color, Span = Math.Abs(span + 1), Text = "&nbsp;" };
+
+                        if (renderText == false) overflow.Text = item.Text;
+
+                        this.RenderItem(overflow, 0);
+                    }
+
+                    span = 32 + span;
+                }
 
                 i += item.Span;
             }
@@ -410,93 +441,54 @@ namespace LiteDB.Studio
             _writer.AppendLine("</div>");
         }
 
-        private int RenderItem(PageItem item, int blocksLeftInLine)
+        private bool RenderItem(PageItem item, int span)
         {
-            var blocksToPrint = 1 + item.Span;
-            var textToPrint = string.Empty;
-            var textLeft = item.Text ?? item.Value.ToString();
+            var renderText = true;
 
-            while (blocksToPrint > 0)
+            _writer.Append($"<a title='{item.Index}'");
+
+            if (!string.IsNullOrEmpty(item.Href))
             {
-                var overflow = false;
-
-                blocksLeftInLine--;
-                blocksToPrint--;
-
-                _writer.Append($"<a title='{item.Index}'");
-
-                if (!string.IsNullOrEmpty(item.Href))
-                    _writer.Append($" href='{item.Href}'");
-
-                if (!string.IsNullOrEmpty(item.Target))
-                    _writer.Append($" target='{item.Target}'");
-
-                if (item.Color >= 0)
-                    _writer.Append($" class='c{item.Color}'");
-
-                if (blocksToPrint > 0)
-                {
-                    var span = blocksToPrint;
-                    if (blocksToPrint > blocksLeftInLine)
-                    {
-                        overflow = true;
-                        span = blocksLeftInLine;
-
-                        textToPrint = SliceText(ref textLeft, blocksLeftInLine, blocksToPrint);
-                    }
-
-                    _writer.Append($" style='min-width: {BLOCK_WIDTH * (span + 1) + (span * 2)}px'");
-
-                    blocksLeftInLine -= span;
-                    blocksToPrint -= span;
-                }
-
-                if (!string.IsNullOrEmpty(item.Caption))
-                    _writer.Append($" st='{item.Caption}'");
-
-                if (!string.IsNullOrEmpty(item.Id))
-                    _writer.Append($" id='{item.Id}'");
-
-                _writer.Append(">");
-
-                if (overflow)
-                {
-                    _writer.Append(textToPrint);
-                    _writer.Append(" &#8594;");  // right arrow '→'
-                }
-                else if (textLeft != string.Empty)
-                    _writer.Append(textLeft);
-                else
-                    _writer.Append("&#8594;");
-
-                _writer.Append("</a>");
-
-                if (blocksLeftInLine == 0)
-                {
-                    // Line break
-                    _writer.AppendLine("</div><div class='line'>");
-                    blocksLeftInLine = BLOCKS_PER_LINE;
-                }
+                _writer.Append($" href='{item.Href}'");
             }
 
-            return blocksLeftInLine;
-        }
-
-        private string SliceText(ref string text, int blocksLeftInLine, int blocksToPrint)
-        {
-            var textToPrint = string.Empty;
-
-            if (blocksLeftInLine > 1 && (blocksLeftInLine > blocksToPrint - blocksLeftInLine || blocksLeftInLine > 30))
+            if (!string.IsNullOrEmpty(item.Target))
             {
-                var len = 3 * blocksLeftInLine;
-                if (len >= text.Length)
-                    textToPrint = text;
-                else
-                    textToPrint = text.Substring(0, len);
+                _writer.Append($" target='{item.Target}'");
             }
 
-            text = text.Substring(textToPrint.Length);
-            return textToPrint;
+            if (item.Color >= 0)
+            {
+                _writer.Append($" class='c{item.Color}'");
+            }
+
+            if (item.Span > 0)
+            {
+                var s = item.Span + (span < 0 ? span : 0);
+
+                if (s < item.Span && Math.Abs(span) > s)
+                {
+                    renderText = false;
+                }
+
+                _writer.Append($" style='min-width: {BLOCK_WIDTH * (s + 1) + (s * 2)}px'");
+            }
+
+            if (!string.IsNullOrEmpty(item.Caption))
+            {
+                _writer.Append($" st='{item.Caption}'");
+            }
+
+            if (!string.IsNullOrEmpty(item.Id))
+            {
+                _writer.Append($" id='{item.Id}'");
+            }
+
+            _writer.Append(">");
+            _writer.Append(renderText ? (item.Text ?? item.Value.ToString()) : "&#8594;");
+            _writer.Append("</a>");
+
+            return renderText;
         }
 
         private void RenderFooter()

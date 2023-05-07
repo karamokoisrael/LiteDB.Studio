@@ -15,10 +15,11 @@ namespace LiteDB.Studio
 
         public int Id { get; set; }
         public bool Executing { get; set; } = false;
-        public string Filename { get; set; } = null;
+
         public string EditorContent { get; set; } = "";
         public string SelectedTab { get; set; } = "";
         public Tuple<int, int> Position { get; set; }
+
         public string Sql { get; set; } = "";
         public string Collection { get; set; } = "";
         public List<BsonValue> Result { get; set; } = null;
@@ -34,7 +35,7 @@ namespace LiteDB.Studio
 
         public Thread Thread { get; set; }
         public bool ThreadRunning { get; set; } = true;
-        public ManualResetEventSlim WaitHandle { get; } = new ManualResetEventSlim(false);
+        public ManualResetEventSlim WaitHandle = new ManualResetEventSlim(false);
 
         public void ReadResult(IBsonDataReader reader)
         {
@@ -43,11 +44,10 @@ namespace LiteDB.Studio
             this.Collection = reader.Collection;
 
             var index = 0;
-            var hasLimit = this.Sql.IndexOf("LIMIT ", StringComparison.OrdinalIgnoreCase) >= 0;
 
             while (reader.Read())
             {
-                if (index++ >= RESULT_LIMIT && hasLimit == false)
+                if (index++ >= RESULT_LIMIT)
                 {
                     this.LimitExceeded = true;
                     break;
