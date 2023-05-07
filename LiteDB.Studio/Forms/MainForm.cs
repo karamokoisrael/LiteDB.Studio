@@ -51,7 +51,7 @@ namespace LiteDB.Studio
                 if (this.ActiveTask == null) return;
 
                 this.ActiveTask.EditorContent = txtSql.Text;
-                this.ActiveTask.SelectedTab = tabResult.SelectedTab.Name;
+                this.ActiveTask.SelectedTab = Graph.SelectedTab.Name;
                 this.ActiveTask.Position = new Tuple<int, int>(txtSql.ActiveTextAreaControl.TextArea.Caret.Line, txtSql.ActiveTextAreaControl.TextArea.Caret.Column);
 
                 lblCursor.Text = $"Line: {(txtSql.ActiveTextAreaControl.Caret.Line + 1)} - Column: {(txtSql.ActiveTextAreaControl.Caret.Column + 1)}";
@@ -239,7 +239,7 @@ namespace LiteDB.Studio
             // adding new + tab at end
             tabSql.TabPages.Add("+", "+");
 
-            tabResult.SelectTab("tabGrid");
+            Graph.SelectTab("tabGrid");
         }
 
         private void ExecuteSql(string sql)
@@ -356,7 +356,7 @@ namespace LiteDB.Studio
 
                         if (this.ActiveTask?.Id == t.Id)
                         {
-                            tabResult.SelectedTab = tabText;
+                            Graph.SelectedTab = tabText;
                             this.LoadResult(o as TaskData);
                         }
 
@@ -406,17 +406,17 @@ namespace LiteDB.Studio
                 }
                 else if(data.Result != null)
                 {
-                    if (tabResult.SelectedTab == tabGrid && data.IsGridLoaded == false)
+                    if (Graph.SelectedTab == tabGrid && data.IsGridLoaded == false)
                     {
                         grdResult.BindBsonData(data);
                         data.IsGridLoaded = true;
                     }
-                    else if(tabResult.SelectedTab == tabText && data.IsTextLoaded == false)
+                    else if(Graph.SelectedTab == tabText && data.IsTextLoaded == false)
                     {
                         txtResult.BindBsonData(data);
                         data.IsTextLoaded = true;
                     }
-                    else if(tabResult.SelectedTab == tabParameters && data.IsParametersLoaded == false)
+                    else if(Graph.SelectedTab == tabParameters && data.IsParametersLoaded == false)
                     {
                         txtParameters.BindParameter(data);
                         data.IsParametersLoaded = true;
@@ -697,8 +697,8 @@ namespace LiteDB.Studio
 
             // set focus to result
             this.ActiveControl =
-                tabResult.SelectedTab == tabGrid ? (Control)grdResult :
-                tabResult.SelectedTab == tabText ? (Control)txtResult : (Control)txtParameters; 
+                Graph.SelectedTab == tabGrid ? (Control)grdResult :
+                Graph.SelectedTab == tabText ? (Control)txtResult : (Control)txtParameters; 
         }
 
         private void TabSql_MouseClick(object sender, MouseEventArgs e)
@@ -764,9 +764,9 @@ namespace LiteDB.Studio
                     txtSql.ActiveTextAreaControl.TextArea.Caret.Column = this.ActiveTask.Position.Item2;
                 }
 
-                if (tabResult.SelectedTab.Name != this.ActiveTask.SelectedTab && this.ActiveTask.SelectedTab != "")
+                if (Graph.SelectedTab.Name != this.ActiveTask.SelectedTab && this.ActiveTask.SelectedTab != "")
                 {
-                    tabResult.SelectTab(this.ActiveTask.SelectedTab); // fire LoadResult from TabResult_IndexChanged
+                    Graph.SelectTab(this.ActiveTask.SelectedTab); // fire LoadResult from TabResult_IndexChanged
                 }
                 else
                 {
@@ -877,6 +877,11 @@ namespace LiteDB.Studio
             }
 
             AppSettingsManager.ApplicationSettings.MaxRecentListItems = (int)num.Value;
+        }
+
+        private void Charts_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
