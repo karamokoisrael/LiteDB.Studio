@@ -30,13 +30,12 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            System.Windows.Forms.TabPage Charts;
             this.splitMain = new System.Windows.Forms.SplitContainer();
             this.tvwDatabase = new System.Windows.Forms.TreeView();
             this.imgList = new System.Windows.Forms.ImageList(this.components);
             this.splitRight = new System.Windows.Forms.SplitContainer();
             this.txtSql = new ICSharpCode.TextEditor.TextEditorControl();
-            this.Graph = new System.Windows.Forms.TabControl();
+            this.tabResult = new System.Windows.Forms.TabControl();
             this.tabGrid = new System.Windows.Forms.TabPage();
             this.grdResult = new System.Windows.Forms.DataGridView();
             this.tabText = new System.Windows.Forms.TabPage();
@@ -90,7 +89,7 @@
             this.loadLastDb = new System.Windows.Forms.CheckBox();
             this.maxRecentListItems = new System.Windows.Forms.NumericUpDown();
             this.maxRecentItemsTooltip = new System.Windows.Forms.ToolTip(this.components);
-            Charts = new System.Windows.Forms.TabPage();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
             ((System.ComponentModel.ISupportInitialize)(this.splitMain)).BeginInit();
             this.splitMain.Panel1.SuspendLayout();
             this.splitMain.Panel2.SuspendLayout();
@@ -99,7 +98,7 @@
             this.splitRight.Panel1.SuspendLayout();
             this.splitRight.Panel2.SuspendLayout();
             this.splitRight.SuspendLayout();
-            this.Graph.SuspendLayout();
+            this.tabResult.SuspendLayout();
             this.tabGrid.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.grdResult)).BeginInit();
             this.tabText.SuspendLayout();
@@ -173,7 +172,7 @@
             // 
             // splitRight.Panel2
             // 
-            this.splitRight.Panel2.Controls.Add(this.Graph);
+            this.splitRight.Panel2.Controls.Add(this.tabResult);
             this.splitRight.Size = new System.Drawing.Size(832, 570);
             this.splitRight.SplitterDistance = 174;
             this.splitRight.TabIndex = 8;
@@ -194,22 +193,22 @@
             this.txtSql.Size = new System.Drawing.Size(828, 171);
             this.txtSql.TabIndex = 2;
             // 
-            // Graph
+            // tabResult
             // 
-            this.Graph.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.tabResult.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.Graph.Controls.Add(this.tabGrid);
-            this.Graph.Controls.Add(this.tabText);
-            this.Graph.Controls.Add(this.tabParameters);
-            this.Graph.Controls.Add(Charts);
-            this.Graph.Location = new System.Drawing.Point(0, 3);
-            this.Graph.Name = "Graph";
-            this.Graph.SelectedIndex = 0;
-            this.Graph.Size = new System.Drawing.Size(832, 389);
-            this.Graph.TabIndex = 0;
-            this.Graph.TabStop = false;
-            this.Graph.Selected += new System.Windows.Forms.TabControlEventHandler(this.TabResult_Selected);
+            this.tabResult.Controls.Add(this.tabGrid);
+            this.tabResult.Controls.Add(this.tabText);
+            this.tabResult.Controls.Add(this.tabParameters);
+            this.tabResult.Controls.Add(this.tabPage1);
+            this.tabResult.Location = new System.Drawing.Point(0, 3);
+            this.tabResult.Name = "tabResult";
+            this.tabResult.SelectedIndex = 0;
+            this.tabResult.Size = new System.Drawing.Size(832, 389);
+            this.tabResult.TabIndex = 0;
+            this.tabResult.TabStop = false;
+            this.tabResult.Selected += new System.Windows.Forms.TabControlEventHandler(this.TabResult_Selected);
             // 
             // tabGrid
             // 
@@ -265,7 +264,7 @@
             this.txtResult.ReadOnly = true;
             this.txtResult.ShowLineNumbers = false;
             this.txtResult.ShowVRuler = false;
-            this.txtResult.Size = new System.Drawing.Size(812, 353);
+            this.txtResult.Size = new System.Drawing.Size(812, 349);
             this.txtResult.TabIndex = 1;
             // 
             // tabParameters
@@ -292,7 +291,7 @@
             this.txtParameters.ReadOnly = true;
             this.txtParameters.ShowLineNumbers = false;
             this.txtParameters.ShowVRuler = false;
-            this.txtParameters.Size = new System.Drawing.Size(811, 352);
+            this.txtParameters.Size = new System.Drawing.Size(811, 348);
             this.txtParameters.TabIndex = 2;
             // 
             // tabSql
@@ -715,15 +714,15 @@
             0});
             this.maxRecentListItems.ValueChanged += new System.EventHandler(this.maxRecentListItems_ValueChanged);
             // 
-            // Charts
+            // tabPage1
             // 
-            Charts.Location = new System.Drawing.Point(4, 29);
-            Charts.Name = "Charts";
-            Charts.Size = new System.Drawing.Size(824, 356);
-            Charts.TabIndex = 0;
-            Charts.Text = "tabPage1";
-            Charts.UseVisualStyleBackColor = true;
-            Charts.Click += new System.EventHandler(this.Charts_Click);
+            this.tabPage1.Location = new System.Drawing.Point(4, 29);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(824, 356);
+            this.tabPage1.TabIndex = 6;
+            this.tabPage1.Text = "Time Series";
+            this.tabPage1.UseVisualStyleBackColor = true;
             // 
             // MainForm
             // 
@@ -751,7 +750,7 @@
             this.splitRight.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitRight)).EndInit();
             this.splitRight.ResumeLayout(false);
-            this.Graph.ResumeLayout(false);
+            this.tabResult.ResumeLayout(false);
             this.tabGrid.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.grdResult)).EndInit();
             this.tabText.ResumeLayout(false);
@@ -807,7 +806,7 @@
         private System.Windows.Forms.StatusStrip stbStatus;
         private System.Windows.Forms.TabPage tabGrid;
         private System.Windows.Forms.TabPage tabParameters;
-        private System.Windows.Forms.TabControl Graph;
+        private System.Windows.Forms.TabControl tabResult;
         private System.Windows.Forms.TabControl tabSql;
         private System.Windows.Forms.TabPage tabText;
         private System.Windows.Forms.ToolStrip tlbMain;
@@ -830,6 +829,7 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         private System.Windows.Forms.NumericUpDown maxRecentListItems;
         private System.Windows.Forms.ToolTip maxRecentItemsTooltip;
+        private System.Windows.Forms.TabPage tabPage1;
     }
 }
 
